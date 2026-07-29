@@ -73,7 +73,7 @@ func (r *RentaRepository) FindByID(id string) (*models.Renta, error) {
 	return &renta, nil
 }
 
-func (r *RentaRepository) Update(id string, renta *models.Renta,) error {
+func (r *RentaRepository) Update(id string, renta *models.Renta) error {
 
 	objectID, err := bson.ObjectIDFromHex(id)
 
@@ -88,11 +88,12 @@ func (r *RentaRepository) Update(id string, renta *models.Renta,) error {
 		},
 		bson.M{
 			"$set": bson.M{
-				"usuario_id":       renta.UsuarioID,
-				"videojuego_id":    renta.VideojuegoID,
-				"fecha_renta":      renta.FechaRenta,
+				"usuario_id":    renta.UsuarioID,
+				"videojuego_id": renta.VideojuegoID,
+				"titulo":        renta.Titulo,
+				"fecha_renta":   renta.FechaRenta,
 				"fecha_entrega": renta.FechaEntrega,
-				"estado":           renta.Estado,
+				"estado":        renta.Estado,
 			},
 		},
 	)
@@ -116,4 +117,61 @@ func (r *RentaRepository) Delete(id string) error {
 	)
 
 	return err
+}
+
+func (r *RentaRepository) ExisteRentaActiva(usuarioID, videojuegoID bson.ObjectID) (bool, error) {
+
+	var renta models.Renta
+
+	err := r.Collection.FindOne(
+		context.Background(),
+		bson.M{
+			"usuarioId":    usuarioID,
+			"videojuegoId": videojuegoID,
+			"estado":       "Activa",
+		},
+	).Decode(&renta)
+
+	if err == mongo.ErrNoDocuments {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (r *RentaRepository) FindByUsuario(usuarioID string) ([]models.Renta, error) {
+
+	objectID, err := bson.ObjectIDFromHex(usuarioID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	cursor, err := r.Collection.Find(
+		context.Background(),
+		bson.M{
+			"usuarioId": objectID,
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var rentas []models.Renta
+
+	err = cursor.All(
+		context.Background(),
+		&rentas,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return rentas, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -48,6 +49,13 @@ func ConnectMongo() error {
 
 	Client = client
 	Database = client.Database(dbName)
+	fmt.Println("Base de datos:", dbName)
 
+	collections, err := Database.ListCollectionNames(context.Background(), map[string]interface{}{})
+	if err != nil {
+		log.Println(err)
+	} else {
+		fmt.Println("Colecciones:", collections)
+	}
 	return nil
 }

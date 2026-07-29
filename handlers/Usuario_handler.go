@@ -17,35 +17,73 @@ func NewUsuarioHandler(service *services.UsuarioService) *UsuarioHandler {
 	}
 }
 
+// ===============================
+// Crear Usuario
+// ===============================
 func (h *UsuarioHandler) CreateUsuario(c *fiber.Ctx) error {
 
 	var usuario models.Usuario
 
 	if err := c.BodyParser(&usuario); err != nil {
-		return c.Status(400).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Datos inválidos",
 		})
 	}
 
-	err := h.UsuarioService.Create(&usuario)
-
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
+	if err := h.UsuarioService.Create(&usuario); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	return c.Status(201).JSON(fiber.Map{
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "Usuario creado correctamente",
+		"usuario": usuario,
 	})
 }
 
+// ===============================
+// Login
+// ===============================
+func (h *UsuarioHandler) Login(c *fiber.Ctx) error {
+
+	var request struct {
+		Correo   string `json:"correo"`
+		Password string `json:"password"`
+	}
+
+	if err := c.BodyParser(&request); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Datos inválidos",
+		})
+	}
+
+	usuario, err := h.UsuarioService.Login(
+		request.Correo,
+		request.Password,
+	)
+
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Inicio de sesión correcto",
+		"usuario": usuario,
+	})
+}
+
+// ===============================
+// Obtener todos
+// ===============================
 func (h *UsuarioHandler) GetUsuarios(c *fiber.Ctx) error {
 
 	usuarios, err := h.UsuarioService.FindAll()
 
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
@@ -53,13 +91,17 @@ func (h *UsuarioHandler) GetUsuarios(c *fiber.Ctx) error {
 	return c.JSON(usuarios)
 }
 
+// ===============================
+// Obtener por ID
+// ===============================
 func (h *UsuarioHandler) GetUsuarioByID(c *fiber.Ctx) error {
+
 	id := c.Params("id")
 
 	usuario, err := h.UsuarioService.FindByID(id)
 
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
@@ -67,42 +109,46 @@ func (h *UsuarioHandler) GetUsuarioByID(c *fiber.Ctx) error {
 	return c.JSON(usuario)
 }
 
+// ===============================
+// Actualizar
+// ===============================
 func (h *UsuarioHandler) UpdateUsuario(c *fiber.Ctx) error {
+
 	id := c.Params("id")
 
 	var usuario models.Usuario
 
 	if err := c.BodyParser(&usuario); err != nil {
-		return c.Status(400).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Datos inválidos",
 		})
 	}
 
-	err := h.UsuarioService.Update(id, &usuario)
-
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
+	if err := h.UsuarioService.Update(id, &usuario); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	return c.Status(200).JSON(fiber.Map{
+	return c.JSON(fiber.Map{
 		"message": "Usuario actualizado correctamente",
 	})
 }
 
+// ===============================
+// Eliminar
+// ===============================
 func (h *UsuarioHandler) DeleteUsuario(c *fiber.Ctx) error {
+
 	id := c.Params("id")
 
-	err := h.UsuarioService.Delete(id)
-
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
+	if err := h.UsuarioService.Delete(id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	return c.Status(200).JSON(fiber.Map{
+	return c.JSON(fiber.Map{
 		"message": "Usuario eliminado correctamente",
 	})
 }

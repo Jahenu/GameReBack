@@ -19,7 +19,6 @@ func NewVideojuegoRepository(collection *mongo.Collection) *VideojuegoRepository
 }
 
 func (r *VideojuegoRepository) Create(videojuego *models.Videojuego) error {
-
 	_, err := r.Collection.InsertOne(
 		context.Background(),
 		videojuego,
@@ -39,14 +38,18 @@ func (r *VideojuegoRepository) FindAll() ([]models.Videojuego, error) {
 		return nil, err
 	}
 
-	var videojuegos []models.Videojuego
+	defer cursor.Close(context.Background())
 
-	err = cursor.All(
+	videojuegos := make([]models.Videojuego, 0)
+
+	if err = cursor.All(
 		context.Background(),
 		&videojuegos,
-	)
+	); err != nil {
+		return nil, err
+	}
 
-	return videojuegos, err
+	return videojuegos, nil
 }
 
 func (r *VideojuegoRepository) FindByID(id string) (*models.Videojuego, error) {
@@ -91,11 +94,12 @@ func (r *VideojuegoRepository) Update(
 		},
 		bson.M{
 			"$set": bson.M{
-				"titulo":       videojuego.Titulo,
-				"descripcion":  videojuego.Plataforma,
-				"precio":       videojuego.PrecioRenta,
-				"stock":        videojuego.Stock,
-				"categoria_id": videojuego.CategoriaID,
+				"titulo":      videojuego.Titulo,
+				"plataforma":  videojuego.Plataforma,
+				"precioRenta": videojuego.PrecioRenta,
+				"stock":       videojuego.Stock,
+				"activo":      videojuego.Activo,
+				"categoriaId": videojuego.CategoriaID,
 			},
 		},
 	)
